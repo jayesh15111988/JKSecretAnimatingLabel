@@ -23,10 +23,13 @@
 -(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andRange:(NSRange)rangeToAnimate{
     self.individualTextAnimationDuration = animationDuration;
     self.attributedStringIndexToUpdate = rangeToAnimate.location;
-    _beginIndexToAnimate = rangeToAnimate.location;
-    _endIndexToAnimate = rangeToAnimate.location + rangeToAnimate.length - 1;
+    self.beginIndexToAnimate = rangeToAnimate.location;
+    self.endIndexToAnimate = rangeToAnimate.location + rangeToAnimate.length - 1;
     self.animatingLength = rangeToAnimate.length;
-    NSAssert(self.endIndexToAnimate < self.text.length, @"Range exceeded than length of input label");
+    
+    //This is to avoid bug when user provided range has exceeded the length of input label text string. Range should always remain within limit
+    NSAssert2(self.endIndexToAnimate < self.text.length, @"Range exceeded than length of the input label. Label title lest index %ld. Input end index encountered %ld", (long)self.text.length - 1, (long)self.endIndexToAnimate);
+    
     [self setShuffledIndicesArray];
     [self setupForSecretTextAnimation];
 }
@@ -55,31 +58,38 @@
     }
     
     for (NSUInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; ++i) {
-        NSInteger remainingCount = descriptionLength - i;
-        NSInteger exchangeIndex = i + arc4random_uniform((u_int32_t )remainingCount);
-        [shuffledArray exchangeObjectAtIndex:i withObjectAtIndex:exchangeIndex];
+        NSInteger adjustedIndex = i - self.beginIndexToAnimate;
+        NSInteger remainingCount = descriptionLength - adjustedIndex;
+        NSInteger exchangeIndex = adjustedIndex + arc4random_uniform((u_int32_t )remainingCount); // - self.beginIndexToAnimate;
+        [shuffledArray exchangeObjectAtIndex:adjustedIndex withObjectAtIndex:exchangeIndex];
     }
     self.shuffledArrayOfIndices = shuffledArray;
 }
 
 -(void)updateTextColorAndAlpha {
-    NSInteger indexToProcess = [self.shuffledArrayOfIndices[self.attributedStringIndexToUpdate++] integerValue];
+    NSInteger indexToProcess = [self.shuffledArrayOfIndices[self.attributedStringIndexToUpdate - self.beginIndexToAnimate] integerValue];
+    self.attributedStringIndexToUpdate++;
     NSRange range = NSMakeRange(indexToProcess, 1);
     NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithAttributedString:self.attributedText];
     UIColor* colorAttributeForCurrentIndex = [attributedString attribute:NSForegroundColorAttributeName atIndex:indexToProcess longestEffectiveRange:&range inRange:range];
     if(CGColorGetAlpha(colorAttributeForCurrentIndex.CGColor) < 1.0){
         [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(indexToProcess, 1)];
     }
-    self.alpha = (CGFloat)(self.attributedStringIndexToUpdate/(CGFloat)self.text.length)*0.75;
+    
+    if(self.animatingLength == self.text.length) {
+        self.alpha = (CGFloat)(self.attributedStringIndexToUpdate/(CGFloat)self.text.length)*0.75;
+    }
     
     self.attributedText = attributedString;
     
-    if(self.attributedStringIndexToUpdate >= self.animatingLength) {
+    if(self.attributedStringIndexToUpdate >= self.animatingLength + self.beginIndexToAnimate) {
         [self.textAnimationTimer invalidate];
         self.textAnimationTimer = nil;
-        [UIView animateWithDuration:1.0 animations:^{
-            self.alpha = 1.0;
-        }];
+        if(self.animatingLength == self.text.length) {
+            [UIView animateWithDuration:1.0 animations:^{
+                self.alpha = 1.0;
+            }];
+        }
     }
 }
 
