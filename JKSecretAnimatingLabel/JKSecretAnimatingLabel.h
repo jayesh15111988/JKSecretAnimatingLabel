@@ -9,6 +9,6 @@
 #import <UIKit/UIKit.h>
 
 @interface JKSecretAnimatingLabel : UILabel
--(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration;
+-(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andRange:(NSRange)rangeToAnimate;
 @end
 

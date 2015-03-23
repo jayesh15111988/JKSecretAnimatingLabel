@@ -17,7 +17,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self.pictureDescriptionLabel animateWithIndividualTextAnimationDuration:0.02];
+    [self.pictureDescriptionLabel animateWithIndividualTextAnimationDuration:0.2 andRange:NSMakeRange(0, self.pictureDescriptionLabel.text.length - 10)];
 }
 
 @end

@@ -13,14 +13,20 @@
 @property (assign) NSInteger attributedStringIndexToUpdate;
 @property (strong) NSArray* shuffledArrayOfIndices;
 @property (assign) NSTimeInterval individualTextAnimationDuration;
+@property (assign) NSInteger beginIndexToAnimate;
+@property (assign) NSInteger endIndexToAnimate;
+@property (assign) NSInteger animatingLength;
 @end
 
 @implementation JKSecretAnimatingLabel
 
--(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration {
+-(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andRange:(NSRange)rangeToAnimate{
     self.individualTextAnimationDuration = animationDuration;
-
-    self.attributedStringIndexToUpdate = 0;
+    self.attributedStringIndexToUpdate = rangeToAnimate.location;
+    _beginIndexToAnimate = rangeToAnimate.location;
+    _endIndexToAnimate = rangeToAnimate.location + rangeToAnimate.length - 1;
+    self.animatingLength = rangeToAnimate.length;
+    NSAssert(self.endIndexToAnimate < self.text.length, @"Range exceeded than length of input label");
     [self setShuffledIndicesArray];
     [self setupForSecretTextAnimation];
 }
@@ -29,8 +35,8 @@
     NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithString:self.text];
     CGFloat whiteColorShade = 0;
     CGFloat individualTextAlpha = 0;
-    NSInteger stringLength = attributedString.length;
-    for(NSInteger i = 0; i < stringLength; i++) {
+
+    for(NSInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; i++) {
         individualTextAlpha = (rand()/(CGFloat)INT_MAX);
         whiteColorShade = (NSInteger)(individualTextAlpha*100)%255;
         [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:whiteColorShade/255.0 alpha:individualTextAlpha] range:NSMakeRange(i, 1)];
@@ -43,12 +49,12 @@
 
 - (void)setShuffledIndicesArray {
     NSMutableArray* shuffledArray = [[NSMutableArray alloc] init];
-    NSUInteger descriptionLength = self.text.length;
-    for(NSInteger i = 0; i< descriptionLength; i++) {
+    NSUInteger descriptionLength = self.animatingLength;
+    for(NSInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; i++) {
         [shuffledArray addObject:@(i)];
     }
     
-    for (NSUInteger i = 0; i < descriptionLength; ++i) {
+    for (NSUInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; ++i) {
         NSInteger remainingCount = descriptionLength - i;
         NSInteger exchangeIndex = i + arc4random_uniform((u_int32_t )remainingCount);
         [shuffledArray exchangeObjectAtIndex:i withObjectAtIndex:exchangeIndex];
@@ -68,7 +74,7 @@
     
     self.attributedText = attributedString;
     
-    if(self.attributedStringIndexToUpdate >= self.text.length) {
+    if(self.attributedStringIndexToUpdate >= self.animatingLength) {
         [self.textAnimationTimer invalidate];
         self.textAnimationTimer = nil;
         [UIView animateWithDuration:1.0 animations:^{
