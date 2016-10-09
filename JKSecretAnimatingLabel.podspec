@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "JKSecretAnimatingLabel"
-  s.version          = "1.0"
+  s.version          = "2.0"
   s.summary          = "iOS library to implement the shiny, secret label animation"
   s.description      = <<-DESC
                        A library to make the shiny, secret label animation. Inspired from article 'Replicating The Secret iOS App Text Animation'

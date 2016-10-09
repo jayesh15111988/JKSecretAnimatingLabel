@@ -8,7 +8,15 @@
 
 #import <UIKit/UIKit.h>
 
+typedef void (^AnimationCompletionBlock)();
+
+NS_ASSUME_NONNULL_BEGIN
+
 @interface JKSecretAnimatingLabel : UILabel
--(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andRange:(NSRange)rangeToAnimate;
+
+- (void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(nullable AnimationCompletionBlock)block;
+- (void)animateColorTransitionWithAnimationDuration:(NSTimeInterval)animationDuration andInitialColor:(UIColor*)initialColor andFinalColor:(UIColor*)finalColor andCompletionBlock:(nullable AnimationCompletionBlock)block;
+
 @end
 
+NS_ASSUME_NONNULL_END

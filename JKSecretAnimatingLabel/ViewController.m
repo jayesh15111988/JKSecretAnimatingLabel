@@ -10,14 +10,23 @@
 #import "JKSecretAnimatingLabel.h"
 
 @interface ViewController ()
+
 @property (weak, nonatomic) IBOutlet JKSecretAnimatingLabel *pictureDescriptionLabel;
+@property (weak, nonatomic) IBOutlet JKSecretAnimatingLabel *anotherPictureDescriptionLabel;
+
+
 @end
 
 @implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self.pictureDescriptionLabel animateWithIndividualTextAnimationDuration:0.04 andRange:NSMakeRange(0, self.pictureDescriptionLabel.text.length)];
+    [self.pictureDescriptionLabel animateWithIndividualTextAnimationDuration:3 andCompletionBlock:^{
+        
+    }];
+    [self.anotherPictureDescriptionLabel animateColorTransitionWithAnimationDuration:3 andInitialColor:[UIColor redColor] andFinalColor:[UIColor purpleColor] andCompletionBlock:^{
+        
+    }];
 }
 
 @end

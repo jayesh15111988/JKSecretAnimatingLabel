@@ -9,29 +9,60 @@
 #import "JKSecretAnimatingLabel.h"
 
 @interface JKSecretAnimatingLabel ()
-@property (strong) NSTimer* textAnimationTimer;
-@property (assign) NSInteger attributedStringIndexToUpdate;
-@property (strong) NSArray* shuffledArrayOfIndices;
-@property (assign) NSTimeInterval individualTextAnimationDuration;
-@property (assign) NSInteger beginIndexToAnimate;
-@property (assign) NSInteger endIndexToAnimate;
-@property (assign) NSInteger animatingLength;
+
+@property (nonatomic, strong) NSTimer* textAnimationTimer;
+@property (nonatomic, assign) NSInteger attributedStringIndexToUpdate;
+@property (nonatomic, copy)   NSArray* shuffledArrayOfIndices;
+@property (nonatomic, assign) NSTimeInterval individualTextAnimationDuration;
+@property (nonatomic, assign) NSInteger beginIndexToAnimate;
+@property (nonatomic, assign) NSInteger endIndexToAnimate;
+@property (nonatomic, assign) NSInteger animatingLength;
+@property (nonatomic, strong) UIColor* initialColor;
+@property (nonatomic, strong) UIColor* finalColor;
+@property (nonatomic, strong) AnimationCompletionBlock completionBlock;
+
 @end
 
 @implementation JKSecretAnimatingLabel
 
--(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andRange:(NSRange)rangeToAnimate{
-    self.individualTextAnimationDuration = animationDuration;
+-(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(AnimationCompletionBlock)block {
+    [self initializeParametersWithAnimationDuration:animationDuration];
+    
+    //This is to avoid bug when user provided range has exceeded the length of input label text string. Range should always remain within limit
+    NSAssert2(self.endIndexToAnimate < self.text.length, @"Range exceeded than length of the input label. Label title lest index %ld. Input end index encountered %ld", (long)self.text.length - 1, (long)self.endIndexToAnimate);
+    self.completionBlock = block;
+    [self setShuffledIndicesArray];
+    [self setupForSecretTextAnimation];
+}
+
+- (void)animateColorTransitionWithAnimationDuration:(NSTimeInterval)animationDuration andInitialColor:(UIColor*)initialColor andFinalColor:(UIColor*)finalColor andCompletionBlock:(AnimationCompletionBlock)block {
+    [self initializeParametersWithAnimationDuration:animationDuration];
+    self.initialColor = initialColor;
+    self.finalColor = finalColor;
+    self.completionBlock = block;
+    [self setShuffledIndicesArray];
+    [self setShuffledIndicesArrayForColorChange];
+}
+
+- (void)initializeParametersWithAnimationDuration:(NSTimeInterval)animationDuration {
+    NSRange rangeToAnimate = NSMakeRange(0, self.text.length);
+    self.individualTextAnimationDuration = animationDuration/self.text.length;
     self.attributedStringIndexToUpdate = rangeToAnimate.location;
     self.beginIndexToAnimate = rangeToAnimate.location;
     self.endIndexToAnimate = rangeToAnimate.location + rangeToAnimate.length - 1;
     self.animatingLength = rangeToAnimate.length;
+}
+
+- (void)setShuffledIndicesArrayForColorChange {
+    NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithString:self.text];
     
-    //This is to avoid bug when user provided range has exceeded the length of input label text string. Range should always remain within limit
-    NSAssert2(self.endIndexToAnimate < self.text.length, @"Range exceeded than length of the input label. Label title lest index %ld. Input end index encountered %ld", (long)self.text.length - 1, (long)self.endIndexToAnimate);
+    for(NSInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; i++) {
+        [attributedString addAttribute:NSForegroundColorAttributeName value:self.initialColor range:NSMakeRange(i, 1)];
+        self.attributedText = attributedString;
+    }
     
-    [self setShuffledIndicesArray];
-    [self setupForSecretTextAnimation];
+    self.textAnimationTimer = [NSTimer timerWithTimeInterval:self.individualTextAnimationDuration target:self selector:@selector(updateTextColor) userInfo:nil repeats:YES];
+    [[NSRunLoop mainRunLoop] addTimer:self.textAnimationTimer forMode:NSDefaultRunLoopMode];
 }
 
 -(void)setupForSecretTextAnimation {
@@ -60,10 +91,30 @@
     for (NSUInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; ++i) {
         NSInteger adjustedIndex = i - self.beginIndexToAnimate;
         NSInteger remainingCount = descriptionLength - adjustedIndex;
-        NSInteger exchangeIndex = adjustedIndex + arc4random_uniform((u_int32_t )remainingCount); // - self.beginIndexToAnimate;
+        NSInteger exchangeIndex = adjustedIndex + arc4random_uniform((u_int32_t )remainingCount);
         [shuffledArray exchangeObjectAtIndex:adjustedIndex withObjectAtIndex:exchangeIndex];
     }
     self.shuffledArrayOfIndices = shuffledArray;
+}
+
+-(void)updateTextColor {
+    NSInteger indexToProcess = [self.shuffledArrayOfIndices[self.attributedStringIndexToUpdate - self.beginIndexToAnimate] integerValue];
+    self.attributedStringIndexToUpdate++;
+    NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithAttributedString:self.attributedText];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:self.finalColor range:NSMakeRange(indexToProcess, 1)];
+    
+    self.attributedText = attributedString;
+    
+    if(self.attributedStringIndexToUpdate >= self.animatingLength + self.beginIndexToAnimate) {
+        [self.textAnimationTimer invalidate];
+        self.textAnimationTimer = nil;
+        if(self.animatingLength == self.text.length) {
+            self.textColor = self.finalColor;
+            if (self.completionBlock) {
+                self.completionBlock();
+            }
+        }
+    }
 }
 
 -(void)updateTextColorAndAlpha {
@@ -77,7 +128,7 @@
     }
     
     if(self.animatingLength == self.text.length) {
-        self.alpha = (CGFloat)(self.attributedStringIndexToUpdate/(CGFloat)self.text.length)*0.75;
+        self.alpha = (CGFloat)(self.attributedStringIndexToUpdate/(CGFloat)self.text.length) * 0.75;
     }
     
     self.attributedText = attributedString;
@@ -86,9 +137,10 @@
         [self.textAnimationTimer invalidate];
         self.textAnimationTimer = nil;
         if(self.animatingLength == self.text.length) {
-            [UIView animateWithDuration:1.0 animations:^{
-                self.alpha = 1.0;
-            }];
+            self.alpha = 1.0;
+            if (self.completionBlock) {
+                self.completionBlock();
+            }
         }
     }
 }
