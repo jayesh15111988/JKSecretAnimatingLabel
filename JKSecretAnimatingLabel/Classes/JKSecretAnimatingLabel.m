@@ -30,7 +30,7 @@
 
 @implementation JKSecretAnimatingLabel
 
--(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(AnimationCompletionBlock)block {
+-(void)animateAndShowWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(AnimationCompletionBlock)block {
     [self initializeParametersWithAnimationDuration:animationDuration];
     self.originalColor = self.textColor;
     [self.originalColor getRed:&_redColor green:&_greenColor blue:&_blueColor alpha:&_alpha];
