@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface JKSecretAnimatingLabel : UILabel
 
 - (void)animateAndShowWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(nullable AnimationCompletionBlock)block;
+- (void)animateAndHideWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(nullable AnimationCompletionBlock)block;
 - (void)animateColorTransitionWithAnimationDuration:(NSTimeInterval)animationDuration andInitialColor:(UIColor*)initialColor andFinalColor:(UIColor*)finalColor andCompletionBlock:(nullable AnimationCompletionBlock)block;
 
 @end

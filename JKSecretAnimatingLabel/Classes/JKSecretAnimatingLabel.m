@@ -8,6 +8,11 @@
 
 #import "JKSecretAnimatingLabel.h"
 
+typedef NS_ENUM(NSUInteger, AnimationState) {
+    AnimationStateShow,
+    AnimationStateHide
+};
+
 @interface JKSecretAnimatingLabel ()
 
 @property (nonatomic, strong) NSTimer* textAnimationTimer;
@@ -24,6 +29,7 @@
 @property (nonatomic, strong) UIColor* originalColor;
 @property (nonatomic, strong) UIColor* initialColor;
 @property (nonatomic, strong) UIColor* finalColor;
+@property (nonatomic, assign) AnimationState animationState;
 @property (nonatomic, strong) AnimationCompletionBlock completionBlock;
 
 @end
@@ -31,6 +37,16 @@
 @implementation JKSecretAnimatingLabel
 
 -(void)animateAndShowWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(AnimationCompletionBlock)block {
+    self.animationState = AnimationStateShow;
+    [self animateWithIndividualTextAnimationDuration:animationDuration andCompletionBlock:block];
+}
+
+- (void)animateAndHideWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(nullable AnimationCompletionBlock)block {
+    self.animationState = AnimationStateHide;
+    [self animateWithIndividualTextAnimationDuration:animationDuration andCompletionBlock:block];
+}
+
+- (void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(nullable AnimationCompletionBlock)block {
     [self initializeParametersWithAnimationDuration:animationDuration];
     self.originalColor = self.textColor;
     [self.originalColor getRed:&_redColor green:&_greenColor blue:&_blueColor alpha:&_alpha];
@@ -77,7 +93,11 @@
 
     for(NSInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; i++) {
         individualTextAlpha = (rand()/(CGFloat)INT_MAX);
-        [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:_redColor green:_greenColor  blue:_blueColor alpha:individualTextAlpha] range:NSMakeRange(i, 1)];
+        if (self.animationState == AnimationStateShow) {
+            [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:_redColor green:_greenColor  blue:_blueColor alpha:individualTextAlpha] range:NSMakeRange(i, 1)];
+        } else {
+            [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:_redColor green:_greenColor  blue:_blueColor alpha:1.0] range:NSMakeRange(i, 1)];
+        }
         self.attributedText = attributedString;
     }
     
@@ -127,8 +147,13 @@
     NSRange range = NSMakeRange(indexToProcess, 1);
     NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithAttributedString:self.attributedText];
     UIColor* colorAttributeForCurrentIndex = [attributedString attribute:NSForegroundColorAttributeName atIndex:indexToProcess longestEffectiveRange:&range inRange:range];
-    if(CGColorGetAlpha(colorAttributeForCurrentIndex.CGColor) < 1.0){
-        [attributedString addAttribute:NSForegroundColorAttributeName value:self.originalColor range:NSMakeRange(indexToProcess, 1)];
+
+    if (self.animationState == AnimationStateShow) {
+        if(CGColorGetAlpha(colorAttributeForCurrentIndex.CGColor) < 1.0){
+            [attributedString addAttribute:NSForegroundColorAttributeName value:self.originalColor range:NSMakeRange(indexToProcess, 1)];
+        }
+    } else {
+        [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:_redColor green:_greenColor blue:_blueColor alpha:0.1] range:NSMakeRange(indexToProcess, 1)];
     }
     
     if(self.animatingLength == self.text.length) {
@@ -141,7 +166,7 @@
         [self.textAnimationTimer invalidate];
         self.textAnimationTimer = nil;
         if(self.animatingLength == self.text.length) {
-            self.alpha = 1.0;
+            self.textColor = self.animationState == AnimationStateShow ? self.originalColor : [UIColor colorWithWhite:1.0 alpha:0.0];
             if (self.completionBlock) {
                 self.completionBlock();
             }

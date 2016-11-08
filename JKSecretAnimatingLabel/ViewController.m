@@ -22,6 +22,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.pictureDescriptionLabel.textColor = [UIColor purpleColor];
+    self.pictureDescriptionLabel.alpha = 0.0;
     [self.pictureDescriptionLabel animateAndShowWithIndividualTextAnimationDuration:3 andCompletionBlock:^{
         
     }];
