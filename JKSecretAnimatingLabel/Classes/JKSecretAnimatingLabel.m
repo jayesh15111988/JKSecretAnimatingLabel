@@ -17,6 +17,11 @@
 @property (nonatomic, assign) NSInteger beginIndexToAnimate;
 @property (nonatomic, assign) NSInteger endIndexToAnimate;
 @property (nonatomic, assign) NSInteger animatingLength;
+@property (nonatomic, assign) CGFloat redColor;
+@property (nonatomic, assign) CGFloat greenColor;
+@property (nonatomic, assign) CGFloat blueColor;
+@property (nonatomic, assign) CGFloat alpha;
+@property (nonatomic, strong) UIColor* originalColor;
 @property (nonatomic, strong) UIColor* initialColor;
 @property (nonatomic, strong) UIColor* finalColor;
 @property (nonatomic, strong) AnimationCompletionBlock completionBlock;
@@ -27,7 +32,8 @@
 
 -(void)animateWithIndividualTextAnimationDuration:(NSTimeInterval)animationDuration andCompletionBlock:(AnimationCompletionBlock)block {
     [self initializeParametersWithAnimationDuration:animationDuration];
-    
+    self.originalColor = self.textColor;
+    [self.originalColor getRed:&_redColor green:&_greenColor blue:&_blueColor alpha:&_alpha];
     //This is to avoid bug when user provided range has exceeded the length of input label text string. Range should always remain within limit
     NSAssert2(self.endIndexToAnimate < self.text.length, @"Range exceeded than length of the input label. Label title lest index %ld. Input end index encountered %ld", (long)self.text.length - 1, (long)self.endIndexToAnimate);
     self.completionBlock = block;
@@ -67,13 +73,11 @@
 
 -(void)setupForSecretTextAnimation {
     NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithString:self.text];
-    CGFloat whiteColorShade = 0;
     CGFloat individualTextAlpha = 0;
 
     for(NSInteger i = self.beginIndexToAnimate; i <= self.endIndexToAnimate; i++) {
         individualTextAlpha = (rand()/(CGFloat)INT_MAX);
-        whiteColorShade = (NSInteger)(individualTextAlpha*100)%255;
-        [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:whiteColorShade/255.0 alpha:individualTextAlpha] range:NSMakeRange(i, 1)];
+        [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:_redColor green:_greenColor  blue:_blueColor alpha:individualTextAlpha] range:NSMakeRange(i, 1)];
         self.attributedText = attributedString;
     }
     
@@ -124,7 +128,7 @@
     NSMutableAttributedString* attributedString = [[NSMutableAttributedString alloc] initWithAttributedString:self.attributedText];
     UIColor* colorAttributeForCurrentIndex = [attributedString attribute:NSForegroundColorAttributeName atIndex:indexToProcess longestEffectiveRange:&range inRange:range];
     if(CGColorGetAlpha(colorAttributeForCurrentIndex.CGColor) < 1.0){
-        [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(indexToProcess, 1)];
+        [attributedString addAttribute:NSForegroundColorAttributeName value:self.originalColor range:NSMakeRange(indexToProcess, 1)];
     }
     
     if(self.animatingLength == self.text.length) {
